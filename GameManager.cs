@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     public Text scoreText;
     public Text ballsText;
     public Text levelText;
+    public Text highscoreText;
 
     public GameObject panelMenu;
     public GameObject panelPlay;
@@ -32,7 +33,7 @@ public class GameManager : MonoBehaviour
     {
         get { return _score; }
         set { _score = value;
-            scoreText.text = "Score!!! " + _score;
+            scoreText.text = "SCORE: " + _score;
             }
     }
 
@@ -40,7 +41,9 @@ public class GameManager : MonoBehaviour
     public int Level
     {
         get { return _level; }
-        set { _level = value; }
+        set { _level = value;
+            levelText.text = "Level: " + _level;
+        }
     }
 
     private int _balls;
@@ -48,7 +51,9 @@ public class GameManager : MonoBehaviour
     public int Balls
     {
         get { return _balls; }
-        set { _balls = value; }
+        set { _balls = value;
+            ballsText.text = "Balls: " + _balls;
+        }
     }
 
 
@@ -61,6 +66,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         instance = this;
+        PlayerPrefs.DeleteKey("highscore");
         SwitchState(State.MENU);
     }
 
@@ -82,20 +88,31 @@ public class GameManager : MonoBehaviour
         switch (newState)
         {
             case State.MENU:
+                Cursor.visible = true;
+                highscoreText.text = "HIGHSCORE: " + PlayerPrefs.GetInt("highscore");
                 panelMenu.SetActive(true);
                 break;
             case State.INIT:
+                Cursor.visible = false;
                 panelPlay.SetActive(true);
                 Score = 0;
                 Level = 0;
                 Balls = 3;
+                if (_currentlevel != null)
+                {
+                    Destroy(_currentlevel);
+                }
                 Instantiate(playerPrefab);
                 SwitchState(State.LOADlEVEL);
                 break;
             case State.PlAY:
                 break;
             case State.LEVELCOMPLETED:
+                Destroy(_currentball);
+                Destroy(_currentlevel);
+                Level++;
                 panelLevelCompleted.SetActive(true);
+                SwitchState(State.LOADlEVEL, 2f);
                 break;
             case State.LOADlEVEL:
                 if(Level >= levels.Length)
@@ -109,6 +126,10 @@ public class GameManager : MonoBehaviour
                  }
                 break;
             case State.GAMEOVER:
+                if (Score > PlayerPrefs.GetInt("highscore"))
+                {
+                    PlayerPrefs.SetInt("highscore", Score);
+                }
                 panelGameOver.SetActive(true);
                 break;
         }
@@ -132,6 +153,10 @@ public class GameManager : MonoBehaviour
                     {
                         SwitchState(State.GAMEOVER);
                     }
+                } 
+                if(_currentlevel != null && _currentlevel.transform.childCount == 0 && !_isSwitchingState)
+                {
+                    SwitchState(State.LEVELCOMPLETED);
                 }
                 break;
             case State.LEVELCOMPLETED:
@@ -139,6 +164,10 @@ public class GameManager : MonoBehaviour
             case State.LOADlEVEL:
                 break;
             case State.GAMEOVER:
+                if (Input.anyKeyDown)
+                {
+                    SwitchState(State.MENU);
+                }
                 break;
         }
     }
@@ -154,11 +183,13 @@ public class GameManager : MonoBehaviour
             case State.PlAY:
                 break;
             case State.LEVELCOMPLETED:
+                panelLevelCompleted.SetActive(false);
                 break;
             case State.LOADlEVEL:
                 break;
             case State.GAMEOVER:
                 panelPlay.SetActive(false);
+                panelGameOver.SetActive(false);
                 break;
         }
     }
